@@ -1,0 +1,119 @@
+﻿/* Wrapping element */
+/* Set some basic padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Carousel */
+.carousel-caption p {
+    font-size: 20px;
+    line-height: 1.4;
+}
+
+/* Make .svg files in the carousel display properly in older browsers */
+.carousel-inner .item img[src$=".svg"] {
+    width: 100%;
+}
+
+/* QR code generator */
+#qrCode {
+    margin: 15px;
+}
+
+/* Hide/rearrange for smaller screens */
+@media screen and (max-width: 767px) {
+    /* Hide captions */
+    .carousel-caption {
+        display: none;
+    }
+}
+
+/*fix*/
+.wc-chatview-panel {
+    height: 90vh;
+    position: absolute;
+    display: inline-block;
+    overflow: hidden;
+}
+
+body {
+    background: #f5f5f5;
+}
+
+.container-fluid {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+nav {
+    border-left: 5px solid #ec3535;
+    background-color: #454f56 !important;
+}
+
+.admin {
+    margin-top: 15px;
+}
+
+.logo-img path {
+    fill: red;
+}
+
+.progress, .alert-info {
+    border-radius: 0;
+}
+
+    .progress.hidden {
+        visibility: hidden;
+    }
+
+.modify, .upload, .review {
+    border: 6px solid whitesmoke;
+    background: #fff;
+    padding-top: 20px;
+    padding-bottom: 8px;
+    border-radius: 20px;
+}
+
+    .review table {
+        word-break: break-all;
+        word-wrap: break-all;
+        width: initial;
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+
+footer {
+    font-size: 12px;
+    background: #454f56;
+    text-align: center;
+    padding: 8px 0 8px;
+    color: #afb4b7;
+    margin-top: 10px;
+    letter-spacing: 0.08em;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+h3 {
+    color: #454f56;
+    border-left: 5px solid #c5c5c5;
+    padding-left: 8px;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(34, 115, 187, 0.05);
+}
+
+table td, .table th {
+    border-top: 1px solid #dae6f3;
+}
+
+.logo_img {
+    padding-top: 2px;
+    margin-top: 2px;
+    margin-right: 8px;
+    vertical-align: text-bottom;
+}
+

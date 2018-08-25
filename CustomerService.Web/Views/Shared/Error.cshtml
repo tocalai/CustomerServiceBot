@@ -1,0 +1,16 @@
+﻿@using CustomerService.Library;
+@model ErrorViewModel
+@{
+    ViewData[Constants.VIEW_DATA_TITLE_KEY] = "Error";
+}
+
+<h1 class="text-danger">Error.</h1>
+<h2 class="text-danger">An error occurred while processing your request.</h2>
+<h3 class="text-danger">Message: @Model.Message</h3>
+
+@if (Model.ShowRequestId)
+{
+    <p>
+        <strong>Request ID:</strong> <code>@Model.RequestId</code>
+    </p>
+}

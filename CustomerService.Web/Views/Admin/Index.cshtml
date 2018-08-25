@@ -1,0 +1,493 @@
+﻿@using CustomerService.Library;
+@using CustomerService.Web.Models;
+@model KnowledgeBaseViewModel
+@{
+    ViewData[Constants.VIEW_DATA_TITLE_KEY] = "Back Office";
+    var previewRecords = Constants.FAQ_TOP_PREVIEW_RECORDS;
+}
+
+<!--Modal-->
+<div class="modal " id="progress_modal" tabindex="-1" role="dialog" aria-labelledby="progress_modal_title" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progress_modal_title">Please wait...{0} on progress</h5>
+            </div>
+            <div class="progress">
+                <div id="progress_bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100" style="width: 5%"></div>
+                <hr />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--Content-->
+<div class="container-fluid admin row">
+
+    <!--Download-->
+    <section class="modify col-lg-6 col-sm-12">
+        <h3>Download if you want modify</h3>
+        <hr />
+        <div class="form-group">
+            <label for="knowledge_base_srcs">Select FAQ source</label>
+            <select class="form-control" id="knowledge_base_srcs_select">
+                @foreach (var src in Model.SourceDocs)
+                {
+                    <option value="@src">@src</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <div class="btn-group">
+                <button type="button" id="download_button" class="btn btn-primary">Download</button>
+                <button type="button" id="delete_button" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </section>
+
+    <!--Upload-->
+    <section class="upload col-lg-6 col-sm-12">
+        <h3>Upload FAQ while you finished</h3>
+        <hr />
+        <label>Choose file</label><br />
+        <div class="form-group">
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="src_input" accept=".tsv">
+                <label class="custom-file-label" for="src_input"></label>
+            </div>
+        </div>
+        <div class="form-group">
+            <button type="button" id="upload_button" class="btn btn-primary">Update</button>
+        </div>
+    </section>
+
+    <!--Rreview-->
+    <section class="review col-lg-12 col-sm-12 table-responsive">
+        <h3 id="review_cnt_header">Quick review {0} records </h3>from : <span class="review_file">######.tsv</span>
+        <hr />
+        <table class="table table-striped" id="faq_table">
+            <thead class="thead-dark">
+                <tr class="row">
+                    <th scope="col" class="col-lg-1 col-sm-12">#</th>
+                    <th scope="col" class="col-lg-5 col-sm-12">Question</th>
+                    <th scope="col" class="col-lg-6 col-sm-12">Answer</th>
+                </tr>
+            </thead>
+            <tbody id="faq_tbody">
+                @for (var index = 0; index < Model.FAQEntries.Count && index < previewRecords; index++)
+                {
+                    <tr class="row">
+                        <th class="col-lg-1 col-sm-12">@(index + 1)</th>
+                        <td class="col-lg-5 col-sm-12">@Model.FAQEntries.ElementAt(@index).Question</td>
+                        <td class="col-lg-6 col-sm-12">@Model.FAQEntries.ElementAt(@index).Answer</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</div>
+
+@section Scripts
+    {
+    <script type="text/javascript">
+        var previewCnt = @Html.Raw(Json.Serialize(previewRecords));
+        var timerHandle;
+        var reset = false;
+
+        function UploadKnowledgeBasePromise(formdata) {
+            var deferred = $.Deferred();
+            $.ajax({
+                type: "POST",
+                url: '/Admin/UpdateKnowledgeBaseFromSrc',
+                data: formdata,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    deferred.resolve(data);
+                },
+                error: function (error) {
+                    deferred.reject(error);
+                    console.log("UploadKnowledgeBasePromise error" + error);
+                }
+            });
+            return deferred.promise();
+        }
+
+        function GetKnowledgeBaseSrcsPromise() {
+            var deferred = $.Deferred();
+
+            $.ajax({
+                type: "POST",
+                url: '/Admin/GetFAQSources',
+                datatype: "json",
+                data: '',
+                success: function (data) {
+                    deferred.resolve(data);
+                },
+                error: function (error) {
+                    deferred.reject(error);
+                    console.log("GetKnowledgeBaseSrcsPromise" + error);
+                }
+            });
+            return deferred.promise();
+        }
+
+        function GetKnowledgeFAQsPromise(src) {
+            var deferred = $.Deferred();
+
+            $.ajax({
+                type: "POST",
+                url: 'Admin/FindFAQEntries',
+                datatype: "json",
+                data: { source: src },
+                success: function (data) {
+                    deferred.resolve(data);
+                },
+                error: function (error) {
+                    deferred.reject(error);
+                    console.log("GetKnowledgeFAQsPromise" + error);
+                }
+            });
+            return deferred.promise();
+        }
+
+        function setProgressBar(value) {
+            $("#progress_bar").css("width", value + "%").attr("aria-valuenow", value);
+        }
+
+        function updateProgress() {
+            var step = 10;
+            var percent = $("#progress_bar").width() / $("#progress_bar").parent().width() * 100;
+            var value = Math.round(percent);
+
+            if (reset) {
+                $("#progress_bar").toggleClass("bg-info");
+            }
+
+            if (reset && value == 100) {
+                value = 0;
+                reset = false;
+            }
+
+            if (value >= 100) {
+                value = 100;
+                reset = true;
+            }    
+            else {
+
+                value += step;
+            }
+            setProgressBar(value);
+
+        }
+
+        function triggerSelectedOnChanged() {
+            var first = $("#knowledge_base_srcs_select").find("option:first-child").val();
+            $("#knowledge_base_srcs_select").val(first).trigger("change");
+
+            // review area
+            var cntHeader = $("#review_cnt_header").text().format(previewCnt);
+            $("#review_cnt_header").text(cntHeader);
+            $(".review_file").text(first);
+        }
+
+        function refreshSelectOptionAndReview() {
+            // select options area
+            var selectLength = $("#knowledge_base_srcs_select option").length;
+            if (selectLength == 0) {
+                $("#knowledge_base_srcs").attr("disabled", "disabled");
+                $("#faq_tbody").empty();
+                $(".review_file").text('');
+            }
+            else {
+                triggerSelectedOnChanged();
+            }
+
+        }
+
+        function proceedDelete() {
+            // start timer
+            timerHandle = setInterval(updateProgress, 3000);
+            // popup progress modal
+            $('#progress_modal').modal('toggle');
+            console.log("modal show");
+
+            // bind progress bar title
+            changeProgressbarTitle("Deleting")
+
+            var src = $("#knowledge_base_srcs_select").val();
+
+            $.ajax({
+                type: "Post",
+                url: '/Admin/DeleteKnowledgeBaseFromSrc',
+                datatype: "json",
+                data: { source: src },
+                success: function (ret) {
+                    //console.log(ret);
+                    setProgressBar(100);
+
+                    if (ret.resultStatus == 1) {
+                        // means delete completed
+                        // update options and preview
+                        var targetRemove = "#knowledge_base_srcs_select option[value='{0}']".format(src);
+                        $(targetRemove).remove();
+
+                        // check the select option
+                        refreshSelectOptionAndReview();
+
+                        showSuccessAlert("Delete completed");
+                    }
+                    else {
+                        showWarningAlert("Delete failed: " + ret.resultMessge);
+                    }
+
+                },
+                error: function (jqXHR, exception) {
+                    showWarningAlert("Delete failed: " + exception);
+                },
+                complete: function (jqXHR, status) {
+                    // stop timer
+                    clearInterval(timerHandle);
+
+                    //$("#progress_modal").hide();
+                    console.log("modal hide");
+                    setProgressBar(3);
+                    $("#progress_modal_title").text('Please wait...{0} on progress');
+                    $('#progress_modal').modal('toggle');
+                }
+            });
+        }
+
+        function refreshSrcsSelectOption(srcs) {
+            if (srcs.length == 0) {
+                return;
+            }
+
+            // remove all option
+            $("#knowledge_base_srcs_select").find("option").remove();
+            // add srcs
+            var optionTemplate = '<option value="{0}">{1}</option>';
+            srcs.forEach(function (src) {
+                var optionHtml = optionTemplate.format(src, src);
+                $("#knowledge_base_srcs_select").append(optionHtml);
+            });
+            // select first option
+            var first = $("#knowledge_base_srcs_select").find("option:first-child").val();
+            $("#knowledge_base_srcs_select").val(first);
+
+        }
+
+        function refreshFAQTable(entries) {
+            // clear the FAQ table body
+            //console.log("refresh FAQ table");
+            $("#faq_tbody").empty();
+
+            var rowCnt = 1;
+            var rowTemplate = '<tr class="row"><th class="col-lg-1 col-sm-12">{0}</th><td class="col-lg-5 col-sm-12">{1}</td><td class="col-lg-6 col-sm-12">{2}</td></tr>';
+            entries.forEach(function (entry) {
+                //console.log(entry);
+                if (rowCnt <= previewCnt) {
+                    var rowHtml = rowTemplate.format(rowCnt, entry.question, entry.answer);
+                    $("#faq_table tbody").append(rowHtml);
+                }
+
+                rowCnt++;
+            });
+        }
+
+        function downloadKnowledgeFile(src) {
+            $.ajax({
+                type: "Post",
+                url: '/Admin/CreateKnowledgeBaseFile',
+                datatype: "json",
+                data: { source: src },
+                success: function (ret) {
+                    //console.log("Created file compeleted, return: " + ret.fileHandl);
+                    // redirect to download file
+                    var download_url = '/Admin/DownloadKnowledgeBaseFile?fileKey={0}&source={1}'.format(ret.fileHandle, ret.fileName);
+                    window.location = download_url;
+                    showSuccessAlert(ret.fileName + ", download completed");
+                },
+                error: function (jqXHR, exception) {
+                    showWarningAlert("Download failed: " + exception);
+                }
+            });
+        }
+
+        function changeProgressbarTitle(titleAction) {
+            // bind progress bar title
+            var title = $("#progress_modal_title").text();
+            title = title.format(titleAction);
+            $("#progress_modal_title").text(title);
+
+        }
+
+        function showSuccessAlert(message) {
+            var messageTemplate = $("#alert_success_text").text();
+            $("#alert_success_text").text(messageTemplate.format(message));
+            $("#success_alert").fadeTo(3000, 200).slideUp(500, function () {
+                $("#success_alert").slideUp(500);
+                $("#alert_success_text").text('Success! {0}');
+            });
+        }
+
+        function showWarningAlert(message) {
+            var messageTemplate = $("#alert_danger_text").text();
+            $("#alert_danger_text").text(messageTemplate.format(message));
+            $("#danger_alert").fadeTo(3000, 200).slideUp(500, function () {
+                $("#danger_alert").slideUp(500);
+                $("#alert_danger_text").text('Warning! {0}');
+            });
+        }
+
+        $(document).ready(function () {
+            $("#success_alert").hide();
+            $("#danger_alert").hide();
+
+            // initial bind selcte option and review area
+            refreshSelectOptionAndReview();
+
+            $('#src_input').change(function () {
+                if ($('#src_input')[0].files[0] === undefined) {
+                    return;
+                }
+                var fileName = $('#src_input')[0].files[0].name;
+                $(this).next('label').text(fileName);
+            });
+
+            // handle upload button
+            $("#upload_button").click(function () {
+                if (window.FormData === undefined) {
+                    console.log('Browser not support "FormData"');
+                    showWarningAlert('Browser not support "FormData"');
+                    return;
+                }
+
+                var formData = new FormData();
+                var files = $("#src_input").get(0).files;
+
+                if (files.length == 0) {
+                    $("#src_input").focus();
+                    console.log("Please select target source for import process");
+                    showWarningAlert("Please select target source for import process");
+                    return;
+                }
+
+                // open the progress bar
+                // start timer
+                timerHandle = setInterval(updateProgress, 3000);
+                // popup progress modal
+                $('#progress_modal').modal('toggle');
+                console.log("modal show");
+
+                // bind progress bar title
+                changeProgressbarTitle("Uploading");
+
+                formData.append("target", files[0]);
+
+                var uploadTask = UploadKnowledgeBasePromise(formData);
+                uploadTask
+                    .then(
+                        (ret) => {
+                            //setProgressBar(100);
+                            if (ret.resultStatus == 1) {
+                                // request srcs list
+                                return GetKnowledgeBaseSrcsPromise();
+                            }
+                            else {
+                                console.log("Upload failed: " + ret.resultMessage);
+                                showWarningAlert("Upload failed: " + ret.resultMessage);
+                            }
+                        })
+                    .then(
+                    (ret) => {
+                           
+                            if (typeof ret === 'undefined') {
+                                console.log("return from srcs undefined");
+                                return;
+                            }
+                            console.log("return from srcs " + ret);
+                            // refresh the select option
+                            refreshSrcsSelectOption(ret);
+
+                            // request faq list
+                            var selected_src = $("#knowledge_base_srcs_select").val();
+                            $(".review_file").text(selected_src);
+                            console.log("before GetKnowledgeFAQsPromise: " + selected_src);
+                            return GetKnowledgeFAQsPromise(selected_src);
+                        })
+                    .then(
+                        (ret) => {
+                            if (typeof ret === 'undefined') {
+                                console.log("return from faq undefined");
+                                 return;
+                            }
+
+                            console.log("return from faq: " + ret);
+                            // refresh contents of the FAQ table
+                            refreshFAQTable(ret);
+
+                            // clear src input after finished
+                            //$('#src_input').next('label').text(' ');
+                            //$('#src_input').attr('title', ' ');
+                            //$('#src_input').removeAttr('title');
+                            //$('#src_input')[0].files[0].value = null;
+                            showSuccessAlert("Upload completed");
+                        })
+                    .fail((err) => { showWarningAlert(err); })
+                    .always(() => {
+                        // stop timer
+                        clearInterval(timerHandle);
+                        console.log("modal hide");
+                        $("#progress_modal_title").text('Please wait...{0} on progress');
+                        setProgressBar(3);
+                        $('#progress_modal').modal('toggle');
+                    });
+            });
+
+            // handle download button
+            $("#download_button").click(function () {
+                // get the selected option value
+                var src = $("#knowledge_base_srcs_select").val();
+                downloadKnowledgeFile(src);
+
+            });
+
+            // handle download new faq template link
+            $("#new_template_link").on('click', function () {
+                // set no source
+                var src = '';
+                downloadKnowledgeFile(src);
+            });
+
+            // handle delete button
+            $("#delete_button").click(function () {
+                var src = $("#knowledge_base_srcs_select").val();
+                confirmDialog('Delete', 'Are you sure you want to delete: ' + src, proceedDelete);
+            });
+
+            // handle select option change
+            $("select#knowledge_base_srcs_select").change(function () {
+                // get the selected option value
+                var selected_src = $("#knowledge_base_srcs_select").val();
+                $(".review_file").text(selected_src);
+
+                var getFAQsTask = GetKnowledgeFAQsPromise(selected_src);
+                getFAQsTask
+                    .done(
+                        (ret) => {
+                            refreshFAQTable(ret);
+                        })
+                    .fail(
+                        (err) => {
+                            showWarningAlert(err);
+                        });
+            });
+        });
+
+    </script>
+}
+
+
+
+

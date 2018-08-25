@@ -1,0 +1,99 @@
+﻿@using CustomerService.Library;
+@{ 
+    var page = ViewData[Constants.VIEW_DATA_PAGE_KEY] as string;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>@ViewData[Constants.VIEW_DATA_TITLE_KEY] - CustomerService</title>
+
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Titillium+Web:400,300,700&amp;subset=latin,latin-ext" />
+    <link rel="stylesheet" href="~/css/jquery-ui.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/bootstrap.css"/>
+    <link rel="stylesheet" href="~/css/botchat.css" asp-append-version="true"/>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+</head>
+<body class="clearfix">
+
+    <!--Nav-->
+    <nav class="navbar navbar-expand-md navbar-dark">
+        <a class="navbar-brand" href="#">
+            @if (page != Constants.VIEW_DATA_PAGE_ADIM_VALUE)
+            {
+                <h5><img src="images/bots.svg" width="30" height="30" class="d-inline-block logo_img" alt="">King's Talk</h5>
+            }
+           else  
+           {
+                <h5><img src="images/bots.svg" width="30" height="30" class="d-inline-block logo_img" alt="">FAQ Management</h5>
+           }
+
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="true" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarCollapse">
+            <ul class="navbar-nav">
+                @if (page != Constants.VIEW_DATA_PAGE_ADIM_VALUE)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link" href='@Url.Action("Index", "Admin")'>Admin</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="confirmDialog('Leave', 'Want to exit chat?', closeWindow)">Leave</a>
+                    </li>
+                }
+                else
+                {
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <li class="nav-item"><a class="navbar-text user">Hello, @User.Identity.Name</a></li>
+                    }
+                    <li class="nav-item">
+                        <a class="nav-link" id="new_template_link">New-FAQ-templete</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href='@Url.Action("Logout", "Account")'>Log out</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </nav>
+
+    @if (page == Constants.VIEW_DATA_PAGE_ADIM_VALUE)
+    {
+        <!--Alert-->
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <span class="alert-text" id="alert_info_text">
+                This is FAQ management page, please take an action you need bolew or careat new FAQ content by clicking <strong>New-FAQ-templete</strong>.
+            </span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="alert alert-success" role="alert" id="success_alert">
+            <span class="alert-text" id="alert_success_text">
+                Success! {0}
+            </span>
+        </div>
+        <div class="alert alert-danger" role="alert" id="danger_alert">
+            <span class="alert-text" id="alert_danger_text">
+                Warning! {0}
+            </span>
+        </div>
+    }
+
+    <div class="container-fluid">
+        @RenderBody()
+    </div>
+
+    <script src="~/js/jquery-3.0.0.js"></script>
+    <script src="~/js/bootstrap.js"></script>
+    <script src="~/js/jquery-ui.min.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

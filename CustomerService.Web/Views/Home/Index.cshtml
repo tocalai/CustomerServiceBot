@@ -1,0 +1,15 @@
+﻿@inject IJsonHelper Json;
+@using CustomerService.Library;
+@{
+    ViewData[Constants.VIEW_DATA_TITLE_KEY] = "Customer Service Portal";
+    var secretKey = ViewData[Constants.VIEW_DATA_WEB_CHAT_SECRET_KEY];
+}
+
+<div class="d-flex" style="position: relative;" id="bot" />
+
+<script src="~/js/botchat.js"></script>
+<script type="text/javascript">
+    var secretValue = @Html.Raw(Json.Serialize(secretKey));
+    //console.log(secretValue);
+    createChatBot(secretValue, "bot");
+</script>
